@@ -8,6 +8,8 @@ django = "*"
 django-sslserver = "*"
 django-cors-headers = "*"
 djangorestframework = "*"
+locust = "*"
+django-redis = "*"
 
 [dev-packages]
 

@@ -1,6 +1,9 @@
 from django.contrib.auth.models import User, Group
 from .models import JazzCategory, genre, region, character, era
-from rest_framework import viewsets, generics, permissions
+from rest_framework import viewsets, generics, permissions, mixins
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.core.cache import cache
 from .serializers import UserSerializer, GroupSerializer, JazzCategorySerializer, GenreSerializer, RegionSerializer, CharacterSerializer, EraSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -15,16 +18,27 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 # JazzCategory API
 
-class JazzCategoryList(generics.ListAPIView):
+class JazzCategoryList(mixins.ListModelMixin, generics.GenericAPIView):
+    queryset = JazzCategory.objects.all().order_by('id')
+    serializer_class = JazzCategorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @method_decorator(cache_page(60 * 15))
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+class JazzCategoryDetail(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
     queryset = JazzCategory.objects.all()
     serializer_class = JazzCategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @method_decorator(cache_page(60 * 15))
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
-class JazzCategoryDetail(generics.RetrieveAPIView, generics.UpdateAPIView):
-    queryset = JazzCategory.objects.all()
-    serializer_class = JazzCategorySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    def put(self, request, *args, **kwargs):
+        cache.clear()
+        return self.update(request, *args, **kwargs)
 
 # Genre API
 
